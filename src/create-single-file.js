@@ -1,4 +1,4 @@
-import whenAllSettled from 'when-all-settled'
+import whenAllSettled from '../modules/when-all-settled.js'
 
 import setMementoTags from './set-memento-tags.js'
 import setContentSecurityPolicy from './set-content-security-policy/index.js'

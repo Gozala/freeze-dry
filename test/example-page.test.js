@@ -1,7 +1,7 @@
 import fs from 'fs'
 import jsdom from 'jsdom/lib/old-api'
 import jestFetchMock from 'jest-fetch-mock' // magically polyfills Response, Request, ...
-import { dataURLToBlob } from 'blob-util'
+import { dataURLToBlob } from '../modules/blob-util.js'
 
 import freezeDry from '../src/index.js'
 

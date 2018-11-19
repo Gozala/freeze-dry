@@ -1,4 +1,4 @@
-import postcss from 'postcss'
+import postcss from '../../modules/postcss.js'
 
 import { extractLinksFromCss, extractLinksFromCssSynced } from './from-css.js'
 

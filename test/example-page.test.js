@@ -1,7 +1,7 @@
 import fs from 'fs'
 import jsdom from 'jsdom/lib/old-api'
 import jestFetchMock from 'jest-fetch-mock' // magically polyfills Response, Request, ...
-import { dataURLToBlob } from '../modules/blob-util.js'
+import { dataURLToBlob, blobToDataURL } from '../modules/blob-util.js'
 
 import freezeDry from '../src/index.js'
 
@@ -16,7 +16,10 @@ test('should freeze-dry an example page as expected', async () => {
     const doc = await getExampleDoc()
 
     // Run freeze-dry, while passing a fixed date for reproducability.
-    const result = await freezeDry(doc, { now: new Date(1534615340948) })
+    const result = await freezeDry(doc, {
+        now: new Date(1534615340948),
+        blobToURL: blobToDataURL
+    })
 
     expect(result).toMatchSnapshot() // compares to (or creates) snapshot in __snapshots__ folder
 })
@@ -28,7 +31,10 @@ test('should capture current state of documents inside frames', async () => {
     const innerDoc = doc.getElementsByTagName('iframe')[0].contentDocument
     innerDoc.body.appendChild(innerDoc.createElement('hr'))
 
-    const result = await freezeDry(doc, { now: new Date(1534615340948) })
+    const result = await freezeDry(doc, {
+        now: new Date(1534615340948),
+        blobToURL: blobToDataURL
+    })
 
     const dryDoc = await makeDom(result)
     const dryInnerDoc = dryDoc.querySelector('iframe').contentDocument
@@ -37,12 +43,18 @@ test('should capture current state of documents inside frames', async () => {
 
 test('should be idempotent', async () => {
     const doc = await getExampleDoc()
-    const dryHtml = await freezeDry(doc, { now: new Date(1534615340948) })
+    const dryHtml = await freezeDry(doc, {
+        now: new Date(1534615340948),
+        blobToURL: blobToDataURL
+    })
     const docUrl = 'https://url.should.be/irrelevant'
     const dryDoc = await makeDom(dryHtml, docUrl)
 
     // Freeze-dry the freeze-dried page. Adding metadata would of course break idempotency.
-    const extraDryHtml = await freezeDry(dryDoc, { addMetadata: false })
+    const extraDryHtml = await freezeDry(dryDoc, {
+        addMetadata: false,
+        blobToURL: blobToDataURL
+    })
 
     expect(extraDryHtml).toEqual(dryHtml)
 })
@@ -55,6 +67,7 @@ test('should return the incomplete result after given timeout', async () => {
 
     const resultP = freezeDry(doc, {
         now: new Date(1534615340948),
+        blobToURL: blobToDataURL,
         timeout: 2000,
     })
     jest.runAllTimers() // trigger the timeout directly.
@@ -69,7 +82,10 @@ test('should use the given docUrl', async () => {
     // This time, we use a DOMParser, and create a Document that lacks a URL.
     const doc = new DOMParser().parseFromString(docHtml, 'text/html')
 
-    const result = await freezeDry(doc, { docUrl })
+    const result = await freezeDry(doc, {
+        docUrl,
+        blobToURL: blobToDataURL
+    })
 
     const dryDoc = await makeDom(result)
     expect(dryDoc.querySelector('a').getAttribute('href'))
@@ -82,7 +98,10 @@ test('should respect the addMetadata option', async () => {
     const testWithOption = async addMetadata => {
         const doc = await getExampleDoc()
 
-        const result = await freezeDry(doc, { addMetadata })
+        const result = await freezeDry(doc, {
+            addMetadata,
+            blobToURL: blobToDataURL
+        })
 
         const dryDoc = await makeDom(result)
         expect(dryDoc.querySelector('link[rel=original]')).not.toBeNull()
@@ -97,7 +116,10 @@ test('should respect the keepOriginalAttributes option', async () => {
     const testWithOption = async keepOriginalAttributes => {
         const doc = await getExampleDoc()
 
-        const result = await freezeDry(doc, { keepOriginalAttributes })
+        const result = await freezeDry(doc, {
+            keepOriginalAttributes,
+            blobToURL: blobToDataURL
+        })
 
         const dryDoc = await makeDom(result)
         expect(dryDoc.querySelector('img[data-original-src]')).not.toBeNull()

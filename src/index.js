@@ -2,7 +2,6 @@ import captureDom from './capture-dom.js'
 import crawlSubresourcesOfDom from './crawl-subresources.js'
 import dryResources from './dry-resources.js'
 import createSingleFile from './create-single-file.js'
-import { blobToDataURL } from '../modules/blob-util.js'
 
 /**
  * Freeze dry an HTML Document
@@ -26,7 +25,7 @@ export default async function freezeDry(doc = window.document, {
     docUrl,
     addMetadata = true,
     keepOriginalAttributes = true,
-    blobToURL = blobToDataURL,
+    blobToURL,
     now = new Date(),
 } = {}) {
     // Step 1: Capture the DOM (as well as DOMs inside frames).

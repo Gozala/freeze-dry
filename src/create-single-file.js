@@ -1,4 +1,3 @@
-import { blobToDataURL } from 'blob-util'
 import whenAllSettled from 'when-all-settled'
 
 import setMementoTags from './set-memento-tags.js'
@@ -13,9 +12,10 @@ import setContentSecurityPolicy from './set-content-security-policy/index.js'
 export default async function createSingleFile(resource, {
     addMetadata,
     keepOriginalAttributes,
+    blobToURL,
     snapshotTime,
 } = {}) {
-    await deepInlineSubresources(resource, { keepOriginalAttributes })
+    await deepInlineSubresources(resource, blobToURL, { keepOriginalAttributes })
 
     if (addMetadata) {
         // Add metadata about the snapshot to the snapshot itself.
@@ -41,10 +41,11 @@ export default async function createSingleFile(resource, {
 /**
  * Recursively inlines all subresources as data URLs.
  * @param {Object} resource - the resource object representing the DOM with its subresources.
+ * @param {Function} blobToURL - function takes blob of the resource and retuns promise for it's URL.
  * @param {Object} options
  * @returns nothing; the resource will be mutated.
  */
-async function deepInlineSubresources(resource, options = {}) {
+async function deepInlineSubresources(resource, blobToURL, options = {}) {
     await whenAllSettled(
         resource.links.map(async link => {
             if (!link.isSubresource) {
@@ -58,10 +59,10 @@ async function deepInlineSubresources(resource, options = {}) {
             }
 
             // First recurse into the linked subresource, so we start at the tree's leaves.
-            await deepInlineSubresources(link.resource, options)
+            await deepInlineSubresources(link.resource, blobToURL, options)
 
             // Convert the (now self-contained) subresource into a data URL.
-            const dataUrl = await blobToDataURL(link.resource.blob)
+            const dataUrl = await blobToURL(link.resource.blob)
 
             setLinkTarget(link, dataUrl, options)
         }),

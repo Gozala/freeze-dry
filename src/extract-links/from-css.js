@@ -1,6 +1,6 @@
-import valuesParser from '../../modules/postcss-values-parser.js'
+import valuesParser from '../../modules/postcss-values-parser/lib/index.js'
 import postcss from '../../modules/postcss.js'
-import memoizeOne from '../../modules/memoize-one.js'
+import memoizeOne from '../../modules/memoize-one/src/index.js'
 
 import { deepSyncingProxy, transformingCache } from './parse-tools.js'
 

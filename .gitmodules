@@ -1,0 +1,25 @@
+[submodule "modules/postcss-values-parser"]
+	path = modules/postcss-values-parser
+	url = git@github.com:Gozala/postcss-values-parser.git
+	branch = esm
+[submodule "modules/path-to-domnode"]
+	path = modules/path-to-domnode
+	url = git@github.com:Gozala/path-to-domnode.git
+[submodule "modules/domnode-at-path"]
+	path = modules/domnode-at-path
+	url = git@github.com:Gozala/domnode-at-path.git
+[submodule "modules/memoize-one"]
+	path = modules/memoize-one
+	url = git@github.com:Gozala/memoize-one.git
+[submodule "modules/memoize-weak"]
+	path = modules/memoize-weak
+	url = git@github.com:Gozala/memoize-weak.git
+[submodule "modules/mutable-proxy"]
+	path = modules/mutable-proxy
+	url = git@github.com:Gozala/mutable-proxy.git
+[submodule "modules/when-all-settled"]
+	path = modules/when-all-settled
+	url = git@github.com:Treora/when-all-settled.git
+[submodule "modules/document-outerhtml"]
+	path = modules/document-outerhtml
+	url = git@github.com:Gozala/document-outerhtml.git

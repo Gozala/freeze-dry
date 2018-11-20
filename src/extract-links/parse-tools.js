@@ -2,8 +2,8 @@
 // Intended to, for example, create a live view on the URLs inside an element's style or srcset
 // attribute, that allows both reading and writing the URLs in place.
 
-import memoize from '../../modules/memoize-weak.js'
-import mutableProxyFactory from '../../modules/mutable-proxy.js'
+import memoize from '../../modules/memoize-weak/lib/memoize.js'
+import mutableProxyFactory from '../../modules/mutable-proxy/src/index.js'
 
 /**
  * Allows manipulating tokens within a string.

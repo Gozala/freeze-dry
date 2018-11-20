@@ -1,5 +1,5 @@
-import whenAllSettled from '../modules/when-all-settled.js'
-import documentOuterHTML from '../modules/document-outerhtml.js'
+import whenAllSettled from '../modules/when-all-settled/src/index.js'
+import documentOuterHTML from '../modules/document-outerhtml/lib/index.js'
 import postcss from '../modules/postcss.js'
 
 import { extractLinksFromDom, extractLinksFromCss } from './extract-links/index.js'

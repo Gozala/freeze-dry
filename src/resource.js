@@ -25,6 +25,7 @@ export type ArchiveOptions = {
 }
 
 type Parent = {
+  +url:string;
   +options:ArchiveOptions;
   +io:IO;
 }
@@ -49,7 +50,7 @@ export class Resource {
   +link:Link
   +parent:Parent
   sourceURL:string;
-  linkedResources:?Promise<Iterable<Resource>>;
+  linkedResources:?Promise<Map<Link, Resource>>;
 
   sourceResponse:?Promise<Response>
   sourceText:?Promise<string>
@@ -95,7 +96,7 @@ export class Resource {
   // Immediate subresources represented as `Resource` instances.
   // This just calls static function with a same name and caches result for
   // subsequent calls.
-  resources()/*:Promise<Iterable<Resource>>*/ {
+  resources()/*:Promise<Map<Link, Resource>>*/ {
     const {linkedResources} = this
     if (linkedResources) {
       return linkedResources
@@ -105,23 +106,20 @@ export class Resource {
       return linkedResources
     }
   }
-  static async resources(resource/*:Resource*/)/*:Promise<Iterable<Resource>>*/ {
+  static async resources(resource/*:Resource*/)/*:Promise<Map<Link, Resource>>*/ {
     const links = await resource.links()
-    return Resource.resourceIterator(resource, links)
-  }
-  // Function just turns subresource links into resource instances.
-  static * resourceIterator(resource/*:Resource*/, links/*:Link[]*/)/*:Iterable<Resource>*/ {
+    const resources = new Map()
     for (const link of links) {
       switch (link.subresourceType) {
         case "image":
         case "audio":
         case "video":
         case "font": {
-          yield new Resource(resource, link)
+          resources.set(link, new Resource(resource, link))
           break
         }
         case "style": {
-          yield new StyleSheetResource(resource, link)
+          resources.set(link, new StyleSheetResource(resource, link))
           break
         }
         default: {
@@ -129,8 +127,8 @@ export class Resource {
         }
       }
     }
+    return resources
   }
-
 
   text() {
     return this.downloadText()
@@ -250,7 +248,7 @@ export class DocumentResource extends Resource {
   +parent:DocumentResource;
   document:?Document;
   documentLinks:?Promise<Link[]>
-  documentResources:?Promise<Iterable<Resource>>
+  documentResources:?Promise<Map<Link, Resource>>
   */
   get isRoot() {
     return this.link.subresourceType === "top"
@@ -300,11 +298,9 @@ export class DocumentResource extends Resource {
       return documentLinks
     }
   }
-  static async documentResources(resource/*:DocumentResource*/) {
+  static async documentResources(resource/*:DocumentResource*/)/*:Promise<Map<Link, Resource>>*/ {
     const links = await resource.links()
-    return DocumentResource.documentResourceIterator(resource, links)
-  }
-  static * documentResourceIterator(resource/*:DocumentResource*/, links/*:Link[]*/)/*:Iterable<Resource>*/ {
+    const resources = new Map()
     for (const link of links) {
       if (link.isSubresource) {
         switch (link.subresourceType) {
@@ -312,15 +308,15 @@ export class DocumentResource extends Resource {
           case "audio":
           case "video":
           case "font": {
-            yield new Resource(resource, link)
+            resources.set(link, new Resource(resource, link))
             break
           }
           case "document": {
-            yield new DocumentResource(resource, link)
+            resources.set(link, new DocumentResource(resource, link))
             break
           }
           case "style": {
-            yield new StyleSheetResource(resource, link)
+            resources.set(link, new StyleSheetResource(resource, link))
             break
           }
           default: {
@@ -329,8 +325,9 @@ export class DocumentResource extends Resource {
         }
       }
     }
+    return resources
   }
-  resources()/*:Promise<Iterable<Resource>>*/ {
+  resources() {
     const { documentResources } = this
     if (documentResources) {
       return documentResources
@@ -342,7 +339,7 @@ export class DocumentResource extends Resource {
   }
   async text() {
     const resources = await this.resources()
-    for (const resource of resources) {
+    for (const resource of resources.values()) {
       // We go over each resource which may already be fetched & crawled
       // or it could be a fresh wrapper over the link. It is up to bundler
       // to decide if it can resolve URL without fetchich / crawling
@@ -446,7 +443,7 @@ export class StyleSheetResource extends Resource {
   }
   async text() {
     const resources = await this.resources()
-    for (const resource of resources) {
+    for (const resource of resources.values()) {
       const url = await resource.io.resolveURL(resource)
       resource.replaceURL(url)
     }
@@ -460,3 +457,308 @@ export class StyleSheetResource extends Resource {
     return new Blob([text], {type: "text/css"});
   }
 }
+
+/*::
+
+export type TheDocument = {
+  resourceType: "document";
+  link:DocumentLink | TopLink;
+  resources:?Promise<Map<Link, TheResource>>;
+  document:?Document;
+  sourceDocument:?Document;
+  sourceResponse:?Promise<Response>
+}
+
+export type TheStyleSheet = {
+  resourceType: "style",
+  link:Link,
+  resources:?Promise<Map<Link, TheResource>>,
+  sourceResponse:?Promise<Response>
+}
+
+export type GenericResource = {
+  resourceType: "image" | "audio" | "video" | "font",
+  link:Link,
+  sourceResponse:?Promise<Response>
+}
+  
+
+export type TheResource =
+  | TheDocument
+  | TheStyleSheet
+  | GenericResource
+  
+*/
+
+export const serialize = async (resource/*:TheResource*/, io/*:IO*/) => {
+  switch (resource.resourceType) {
+    case "document":
+      return serializeDocument(resource, io)
+    case "style":
+      return serializeStyleSheet(resource, io)
+    default:
+      return serializeGenericResource(resource, io)
+  }
+}
+
+const serializeStyleSheet = async (resource/*:TheStyleSheet*/, io/*:IO*/) => {
+  await updateLinks(resource, io)
+  return freezeDryStyleSheet(resource, io)
+}
+
+const freezeDryStyleSheet = async (resource/*:TheStyleSheet*/, io/*:IO*/) => {
+  const { source, css } = await captureStyleSheet(resource, io)
+  const text = css ? css.toResult().css : source
+  return text
+}
+
+const serializeDocument = async (resource/*:TheDocument*/, io/*:IO*/) => {
+  await updateLinks(resource, io)
+  return freezeDryDocument(resource, io)
+}
+
+const freezeDryDocument = async (resource/*:TheDocument*/, io/*:IO*/) => {
+  const document = await captureDocument(resource, io)
+  makeDomStatic(document)
+  // TODO: Consult @treora if it was intended to add CSP & momento data only
+  // on the top document. Implementation used to generate data URLs for all
+  // resources so it was not that useful there, however if resources are saved
+  // in separate files it might make sense to add metadata everywhere.
+  // At the moment we just do it on the top document to match assumbtions in
+  // tests.
+  if (resource.link.subresourceType === "top") {
+    // this.setMetadata(document, this.options)
+  }
+  return documentOuterHTML(document)
+}
+
+const serializeGenericResource = async (resource/*:GenericResource*/, io/*:IO*/) => {
+  const response = await fetchResource(resource, io)
+  return response.text()
+}
+
+const updateLinks = async(resource/*:TheStyleSheet|TheDocument*/, io/*:IO*/) => {
+  const resources = await getResources(resource, io)
+  for (const resource of resources.values()) {
+    const url = await resolveURL(resource, io)
+    replaceURL(resource, url)
+  }
+}
+
+export const resolveURL = async (resource/*:TheResource*/, io/*:IO*/) => {
+  return ""
+}
+
+export const replaceURL = (resource/*:TheResource*/, url/*:string*/) => {
+}
+
+export const getResources = async (resource/*:TheDocument|TheStyleSheet*/, io/*:IO*/)/*:Promise<Map<Link, TheResource>>*/ => {
+  switch (resource.resourceType) {
+    case "document":
+      return getDocumentResources(resource, io)
+    default:
+      return getStyleSheetResources(resource, io)
+  }
+}
+
+
+
+const getDocumentResources = async (resource/*:TheDocument*/, io/*:IO*/)/*:Promise<Map<Link, TheResource>>*/ => {
+  // const { resources } = resource
+  // if (resources) {
+  //   return resources
+  // } else {
+    const links = await getDocumentLinks(resource, io)
+    const resources = new Map()
+    for (const link of links) {
+      if (link.isSubresource) {
+        switch (link.subresourceType) {
+          case "image": 
+          case "audio":
+          case "video":
+          case "font": {
+            resources.set(link, initGenericResource(link.subresourceType, link))
+            break
+          }
+          case "document": {
+            resources.set(link, initDocumentResource(link))
+            break
+          }
+          case "style": {
+            resources.set(link, initStyleSheetResource(link))
+            break
+          }
+          default: {
+            throw Error(`Resource "${resource.resourceType}" can not link to resource of type "${link.subresourceType}"`)
+          }
+        }
+      }
+    }
+    // resource.resources = Promise.resolve(resources)
+    return resources
+  // }
+}
+
+const getStyleSheetResources = async (resource/*:TheStyleSheet*/, io/*:IO*/)/*:Promise<Map<Link, TheResource>>*/ => {
+  const links = await getStyleSheetLinks(resource, io)
+  const resources = new Map()
+  for (const link of links) {
+    switch (link.subresourceType) {
+      case "image":
+      case "audio":
+      case "video":
+      case "font": {
+        resources.set(link, initGenericResource(link.subresourceType, link))
+        break
+      }
+      case "style": {
+        resources.set(link, initStyleSheetResource(link))
+        break
+      }
+      default: {
+        throw Error(`Resource "${resource.resourceType}" can not link to resource of type "${link.subresourceType}"`)
+      }
+    }
+  }
+  return resources
+}
+
+
+/*::
+interface Getter<+subject, +value, +context> {
+  (subject, context):value;
+}
+*/
+
+const cache = /*::<subject, value, context>*/ (
+  getter/*:(subject) => ?value*/,
+  setter/*:(subject, value) => mixed*/,
+  update/*:(subject, context) => value*/
+)/*:((subject, context) => value)*/ => (object/*:subject*/, options/*:context*/)/*:value*/ => {
+  const cached = getter(object)
+  if (cached) {
+    return cached
+  } else {
+    const cached = update(object, options)
+    setter(object, cached)
+    return cached
+  }
+}
+
+
+const documentResources = cache(
+  (resource/*:TheDocument*/)/*:?Promise<Map<Link, TheResource>>*/ => resource.resources,
+  (resource/*:TheDocument*/, resources/*:Promise<Map<Link, TheResource>>*/) => resource.resources = resources,
+  getDocumentResources
+)
+
+const styleSheetResources = cache(
+  (resource/*:TheStyleSheet*/)/*:?Promise<Map<Link, TheResource>>*/ => resource.resources,
+  (resource/*:TheStyleSheet*/, resources/*:Promise<Map<Link, TheResource>>*/) => resource.resources = resources,
+  getStyleSheetResources
+)
+
+const initDocumentResource = (link/*:DocumentLink | TopLink*/)/*:TheDocument*/ => {
+  return {
+    resourceType:"document",
+    link,
+    resources:null,
+    sourceResponse:null,
+    document:null,
+    sourceDocument:null,
+  }
+}
+
+const initGenericResource = (resourceType, link/*:Link*/)/*:GenericResource*/ => ({
+  resourceType,
+  link,
+  sourceResponse:null
+})
+
+
+const initStyleSheetResource = (link/*:StyleLink*/)/*:TheStyleSheet*/ => ({
+  resourceType: "style",
+  link,
+  resources:null,
+  sourceResponse:null
+})
+
+export const getDocumentLinks = async(resource/*:TheDocument*/, io/*:IO*/)/*:Promise<Link[]>*/ => {
+  const document = await captureDocument(resource, io)
+  const baseURL = getResourceURL(resource)
+  const links = extractLinksFromDom(document, {docUrl:baseURL})
+  return links.map(link => resolveLink(link, baseURL))
+}
+
+export const getStyleSheetLinks = async(resource/*:TheStyleSheet*/, io/*:IO*/)/*:Promise<Link[]>*/ => {
+  const styleSheet = await captureStyleSheet(resource, io)
+  return styleSheet.links
+}
+
+export const captureStyleSheet = async (resource/*:TheStyleSheet*/, io/*:IO*/) => {
+  const response = await fetchResource(resource, io)
+  const source = await response.text()
+  try {
+    const baseURL = getResourceURL(resource)
+    const css = postcss.parse(source)
+    const url = response.url || resource.link.absoluteTarget
+    const links = extractLinksFromCss(css, url).map(link => resolveLink(link, baseURL))
+    return { css, links, source, url }
+  } catch(error) {
+    return { css:null, links:[], source, url:resource.link.absoluteTarget }
+  }
+}
+
+
+export const captureDocument = async (resource/*:TheDocument*/, io/*:IO*/) => {
+  const {document} = resource
+  if (document) {
+    return document
+  } else {
+    const { sourceDocument } = resource
+    const document = sourceDocument
+      ? sourceDocument.cloneNode(true)
+      : await fetchDocument(resource, io)
+    resource.document = document
+    return document
+  }
+}
+
+const fetchDocument = async(resource/*:TheDocument*/, io/*:IO*/) => {
+  const response = await fetchResource(resource, io)
+  const markup = await response.text() 
+  return new DOMParser().parseFromString(markup, "text/html")
+}
+
+const fetchResource = async(resource/*:TheResource*/, io/*:IO*/) => {
+  const { sourceResponse } = resource
+  if (sourceResponse) {
+    return sourceResponse
+  } else {
+    const sourceResponse = io.fetch(getResourceURL(resource), {
+      signal: io.signal,
+      cache: 'force-cache',
+      redirect: 'follow'
+    })
+    resource.sourceResponse = sourceResponse
+    return sourceResponse
+  }
+}
+
+const getResourceURL = (resource/*:TheResource*/) =>
+  resource.link.absoluteTarget
+
+const resolveLink = (link/*:Link*/, base/*:string*/)/*:Link*/ => {
+    const { hash } = new URL(link.absoluteTarget)
+    const urlWithoutHash = url => url.split('#')[0]
+    if (hash && urlWithoutHash(link.absoluteTarget) === urlWithoutHash(base)) {
+      // The link points to a fragment inside the resource itself.
+      // We make it relative.
+      link.target = hash
+    } else {
+      // The link points outside the resource (or to the resource itself).
+      // We make it absolute.
+      link.target = link.absoluteTarget
+    }
+    return link
+  }

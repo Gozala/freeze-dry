@@ -97,7 +97,7 @@ const getFrameDocument = (iframe/*:HTMLIFrameElement*/)/*:?Document*/ => {
   }
 }
 
-class RootLink {
+class Root {
   /*::
   target:string
   +subresourceType:"top"
@@ -125,8 +125,9 @@ export const freezeDry = (document/*:Document*/=window.document, {
   resolveURL = resourceToDataURL,
   now = new Date(),
 }/*:Options*/ = {}) => {
+  const url = docUrl
   const io = {
-    signal: signal,
+    signal: signal || null,
     fetch: fetcher(fetchResource),
     resolveURL: resolveURL,
     getDocument: getDocInFrame
@@ -138,7 +139,7 @@ export const freezeDry = (document/*:Document*/=window.document, {
     metadata: addMetadata ? {time:now} : null
   }
 
-  return new DocumentResource({io, options}, new RootLink(docUrl, document))
+  return new DocumentResource({io, options, url}, new Root(url, document))
 }
 
 export default freezeDry

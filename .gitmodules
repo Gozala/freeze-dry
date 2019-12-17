@@ -1,25 +1,32 @@
 [submodule "src/package/postcss-values-parser"]
 	path = src/package/postcss-values-parser
 	url = git@github.com:Gozala/postcss-values-parser.git
-	branch = esm
+	branch = master
 [submodule "src/package/path-to-domnode"]
 	path = src/package/path-to-domnode
 	url = git@github.com:Gozala/path-to-domnode.git
+	branch = master
 [submodule "src/package/domnode-at-path"]
 	path = src/package/domnode-at-path
 	url = git@github.com:Gozala/domnode-at-path.git
+	branch = master
 [submodule "src/package/memoize-one"]
 	path = src/package/memoize-one
 	url = git@github.com:Gozala/memoize-one.git
+	branch = master
 [submodule "src/package/memoize-weak"]
 	path = src/package/memoize-weak
 	url = git@github.com:Gozala/memoize-weak.git
+	branch = master
 [submodule "src/package/mutable-proxy"]
 	path = src/package/mutable-proxy
 	url = git@github.com:Gozala/mutable-proxy.git
+	branch = master
 [submodule "src/package/when-all-settled"]
 	path = src/package/when-all-settled
-	url = git@github.com:Treora/when-all-settled.git
+	url = git@github.com:Gozala/when-all-settled.git
+	branch = master
 [submodule "src/package/document-outerhtml"]
 	path = src/package/document-outerhtml
 	url = git@github.com:Gozala/document-outerhtml.git
+	branch = master

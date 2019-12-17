@@ -1,0 +1,3 @@
+[submodule "modules/doctype-to-string"]
+	path = modules/doctype-to-string
+	url = git@github.com:Gozala/doctype-to-string.git

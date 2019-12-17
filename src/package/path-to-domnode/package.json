@@ -1,0 +1,23 @@
+{
+  "name": "path-to-domnode",
+  "version": "1.0.0",
+  "description": "A root node and a descendant and receive the path to the specified node.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marcelklehr/path-to-domnode.git"
+  },
+  "keywords": [
+    "dom",
+    "path"
+  ],
+  "author": "Marcel Klehr <mklehr@gmx.net>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/marcelklehr/path-to-domnode/issues"
+  },
+  "homepage": "https://github.com/marcelklehr/path-to-domnode#readme"
+}

@@ -1,0 +1,9 @@
+[submodule "modules/flatten"]
+	path = modules/flatten
+	url = git@github.com:Gozala/node-flatten.git
+[submodule "modules/indexes-of"]
+	path = modules/indexes-of
+	url = git@github.com:Gozala/indexes-of.git
+[submodule "modules/uniq"]
+	path = modules/uniq
+	url = git@github.com:Gozala/uniq.git

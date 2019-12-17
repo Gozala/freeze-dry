@@ -1,0 +1,23 @@
+{
+  "name": "domnode-at-path",
+  "version": "1.0.0",
+  "description": "Supply a path and a root node and receive the node at that path.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marcelklehr/domnode-at-path.git"
+  },
+  "keywords": [
+    "dom",
+    "path"
+  ],
+  "author": "Marcel Klehr <mklehr@gmx.net>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/marcelklehr/domnode-at-path/issues"
+  },
+  "homepage": "https://github.com/marcelklehr/domnode-at-path#readme"
+}

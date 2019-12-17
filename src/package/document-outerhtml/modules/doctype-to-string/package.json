@@ -1,0 +1,14 @@
+{
+  "author": {
+    "name": "Gerben",
+    "email": "gerben@treora.com"
+  },
+  "description": "Convert a DOM DocumentType into a string, e.g. \"<!DOCTYPE html>\"",
+  "files": [
+    "lib"
+  ],
+  "license": "CC0-1.0",
+  "main": "lib",
+  "name": "doctype-to-string",
+  "version": "0.1.1"
+}

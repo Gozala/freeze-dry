@@ -1,0 +1,20 @@
+{
+  "author": {
+    "name": "Gerben",
+    "email": "gerben@treora.com"
+  },
+  "dependencies": {
+    "doctype-to-string": "^0.1.1"
+  },
+  "description": "Like Element.outerHTML, but for the whole Document.",
+  "files": [
+    "lib"
+  ],
+  "keywords": [
+    "dom"
+  ],
+  "license": "CC0-1.0",
+  "main": "lib",
+  "name": "document-outerhtml",
+  "version": "0.1.0"
+}
